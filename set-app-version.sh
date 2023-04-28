@@ -14,6 +14,7 @@ fi
 
 # Update the version in the Cargo.toml file
 sed -i "s/^version = \".*\"$/version = \"$new_version\"/" Cargo.toml
-sed -i "s/^appVersion: \".*\"$/appVersion: \"$new_version\"/" helm/Chart.yaml
+sed -i "s/^appVersion: \".*\"$/appVersion: \"$new_version\"/" charts/kufefe/Chart.yaml
+sed -i "s/^version: .*$/version: $new_version/" charts/kufefe/Chart.yaml
 
 echo "Version updated to $new_version"
