@@ -4,10 +4,10 @@ kufefe:
   clusterUrl: "https://kubernetes.default.svc"
 
 image:
-  repository: kufefe
+  repository: quay.io/duk4s/kufefe
   pullPolicy: Never
   # Overrides the image tag whose default is the chart appVersion.
-  tag: latest
+  # tag: ""
 
 imagePullSecrets: []
 nameOverride: ""
