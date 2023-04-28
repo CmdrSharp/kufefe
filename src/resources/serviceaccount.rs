@@ -1,11 +1,5 @@
-use crate::{
-    crd::Request,
-    meta::meta,
-    traits::{api::ApiResource, delete::DeleteOpt, expire::Expire},
-    CLIENT, NAMESPACE,
-};
+use crate::{crd::Request, meta::meta, CLIENT, NAMESPACE};
 use k8s_openapi::api::core::v1::ServiceAccount as KubeServiceAccount;
-use kube::api::DeleteParams;
 use kube::api::PostParams;
 use kube::Api;
 
@@ -32,15 +26,9 @@ impl ServiceAccount {
     pub async fn create(
         &self,
         name: String,
-        expire_at: i64,
         owner: &Request,
     ) -> Result<KubeServiceAccount, kube::Error> {
-        let meta = meta(
-            Some(name.clone()),
-            Some(self.namespace.clone()),
-            Some(expire_at),
-            owner,
-        );
+        let meta = meta(Some(name.clone()), Some(self.namespace.clone()), owner);
 
         // Construct the API Object
         let sa = KubeServiceAccount {
@@ -57,21 +45,5 @@ impl ServiceAccount {
             }
             Err(e) => Err(e),
         }
-    }
-
-    /// Delete a ServiceAccount
-    pub async fn _delete(&self, name: String) -> Result<(), kube::Error> {
-        self.api.delete_opt(&name, &DeleteParams::default()).await?;
-        Ok(())
-    }
-}
-
-impl Expire for ServiceAccount {}
-
-impl ApiResource for ServiceAccount {
-    type ApiType = KubeServiceAccount;
-
-    fn get_api(&self) -> Api<Self::ApiType> {
-        self.api.clone()
     }
 }

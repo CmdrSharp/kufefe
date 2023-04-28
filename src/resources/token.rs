@@ -1,9 +1,8 @@
-use crate::traits::{api::ApiResource, delete::DeleteOpt, expire::Expire};
 use crate::{crd::Request, meta::meta};
 use crate::{CLIENT, NAMESPACE};
 use k8s_openapi::api::core::v1::Secret;
 use k8s_openapi::ByteString;
-use kube::api::{DeleteParams, PostParams};
+use kube::api::PostParams;
 use kube::Api;
 
 pub struct Token {
@@ -25,24 +24,21 @@ impl Token {
     pub async fn create(
         &self,
         name: String,
-        expire_at: Option<i64>,
         owner: &Request,
     ) -> Result<Secret, kube::Error> {
-        let mut metadata = meta(
-            Some(name.clone()),
-            Some(self.namespace.clone()),
-            expire_at,
-            owner,
+        let mut metadata = meta(Some(name.clone()), Some(self.namespace.clone()), owner);
+
+        let mut annotations = match metadata.annotations {
+            Some(annotations) => annotations,
+            None => std::collections::BTreeMap::new(),
+        };
+
+        annotations.insert(
+            "kubernetes.io/service-account.name".to_string(),
+            name.clone(),
         );
 
-        if let Some(mut annotations) = metadata.annotations {
-            annotations.insert(
-                "kubernetes.io/service-account.name".to_string(),
-                name.clone(),
-            );
-
-            metadata.annotations = Some(annotations);
-        }
+        metadata.annotations = Some(annotations);
 
         // Create the Secret
         let secret = Secret {
@@ -58,13 +54,6 @@ impl Token {
             }
             Err(e) => Err(e),
         }
-    }
-
-    /// Delete a secret
-    pub async fn _delete(&self, name: String) -> Result<(), kube::Error> {
-        self.api.delete_opt(&name, &DeleteParams::default()).await?;
-
-        Ok(())
     }
 
     /// Get a secret
@@ -85,15 +74,5 @@ impl Token {
         } else {
             return Err(format!("Secret has no property {}", key));
         }
-    }
-}
-
-impl Expire for Token {}
-
-impl ApiResource for Token {
-    type ApiType = Secret;
-
-    fn get_api(&self) -> Api<Self::ApiType> {
-        self.api.clone()
     }
 }

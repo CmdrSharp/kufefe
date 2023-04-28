@@ -94,21 +94,14 @@ async fn added(resource: Request) -> Result<(), Box<dyn Error>> {
     .await?;
 
     // Create the Service Account
-    sa.create(name.clone(), expire_at, &resource).await?;
+    sa.create(name.clone(), &resource).await?;
 
     // Create the SA Token
-    token::Token::new()
-        .create(name.clone(), Some(expire_at), &resource)
-        .await?;
+    token::Token::new().create(name.clone(), &resource).await?;
 
     // Create the RoleBinding
-    rb.create(
-        name.clone(),
-        resource.spec.role.clone(),
-        expire_at,
-        &resource,
-    )
-    .await?;
+    rb.create(name.clone(), resource.spec.role.clone(), &resource)
+        .await?;
 
     // Create the Kubeconfig and update the CRD Status
     let kubeconfig = Kubeconfig::new(name.clone()).await?.to_yaml()?;

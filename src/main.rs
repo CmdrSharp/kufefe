@@ -1,9 +1,4 @@
 use crate::crd::Request;
-use crate::resources::{
-    rolebinding::RoleBinding, serviceaccount::ServiceAccount, token::Token,
-};
-use crate::traits::api::ApiResource;
-use crate::traits::expire::Expire;
 use kube::{Client, Config};
 use std::env;
 use tokio::select;
@@ -11,10 +6,10 @@ use tokio::signal::unix::{signal, SignalKind};
 use tokio::sync::OnceCell;
 
 mod crd;
+mod delete;
 mod kubeconfig;
 mod meta;
 mod resources;
-mod traits;
 mod watcher;
 
 static CLIENT: OnceCell<Client> = OnceCell::const_new();
@@ -71,21 +66,12 @@ async fn main() {
     // Bootstrap Controller for CRD's
     watcher::watch().await;
 
-    // Set up API's
-    let crd = Request::mock();
-    let sa = ServiceAccount::new();
-    let rb = RoleBinding::new();
-    let tk = Token::new();
-
     // Scan for expired resources
     tracing::info!("Starting watcher for expired resources");
+    let crd = Request::mock();
 
     loop {
-        crd.scan(crd.get_api()).await;
-        sa.scan(sa.get_api()).await;
-        rb.scan(rb.get_api()).await;
-        tk.scan(tk.get_api()).await;
-
+        crd.scan().await;
         tokio::time::sleep(tokio::time::Duration::from_secs(60)).await;
     }
 }

@@ -1,7 +1,6 @@
-use crate::traits::{api::ApiResource, expire::Expire};
+use crate::delete::DeleteOpt;
 use crate::CLIENT;
-use async_trait::async_trait;
-use kube::Resource;
+use kube::api::{DeleteParams, ListParams};
 use kube::{
     api::{Api, PostParams},
     ResourceExt,
@@ -69,42 +68,50 @@ impl Request {
             status: Default::default(),
         }
     }
-}
 
-#[async_trait]
-impl Expire for Request {
-    /// Gets the expiry of the resource
-    async fn get_expiry<T>(&self, resource: T) -> Option<i64>
-    where
-        T: Resource<DynamicType = ()> + Clone + Send + Sync,
-    {
-        let api = &self.get_api();
-        let name = resource.name_any();
+    /// Scan for expired Requests
+    pub async fn scan(&self) {
+        tracing::info!("Scanning for expired requests");
 
-        match api.get(&name).await {
-            Ok(request) => {
-                let status = if let Some(status) = &request.status {
-                    status
-                } else {
-                    return None;
-                };
+        let api = &self.get_api().clone();
 
-                status.expires_at
+        match api.list(&ListParams::default()).await {
+            Ok(requests) => {
+                for request in &requests.items {
+                    if self.is_expired(request) {
+                        tracing::info!("Deleting expired request {}", request.name_any());
+
+                        if let Err(err) = api
+                            .delete_opt(&request.name_any(), &DeleteParams::default())
+                            .await
+                        {
+                            tracing::error!("Failed to delete request: {}", err);
+                            continue;
+                        }
+                    }
+                }
             }
-            Err(_) => None,
+            Err(e) => {
+                tracing::error!("Failed to list requests: {}", e);
+            }
         }
     }
 
-    /// Don't require a managed_by label as this is a CRD
-    fn require_managed_by_label() -> bool {
+    /// Checks if the object is expired
+    fn is_expired(&self, request: &Request) -> bool {
+        if let Some(status) = &request.status {
+            if let Some(expires_at) = status.expires_at {
+                if expires_at < chrono::Utc::now().timestamp() {
+                    return true;
+                }
+            }
+        }
+
         false
     }
-}
 
-impl ApiResource for Request {
-    type ApiType = Request;
-
-    fn get_api(&self) -> Api<Self::ApiType> {
+    // Get the API for the CRD
+    pub fn get_api(&self) -> Api<Self> {
         let client = CLIENT.get().unwrap().clone();
         let api: Api<Request> = Api::all(client);
 

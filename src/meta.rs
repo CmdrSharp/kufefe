@@ -30,7 +30,6 @@ pub fn generate_expiry() -> i64 {
 pub fn meta(
     mut name: Option<String>,
     namespace: Option<String>,
-    expiry: Option<i64>,
     owner: &Request,
 ) -> ObjectMeta {
     if name.is_none() {
@@ -40,7 +39,6 @@ pub fn meta(
     let mut meta = ObjectMeta {
         name,
         namespace,
-        annotations: Some(annotations(expiry)),
         labels: Some(labels()),
         ..ObjectMeta::default()
     };
@@ -57,22 +55,6 @@ pub fn meta(
     }
 
     meta
-}
-
-/// Gets BTreeMap of annotations
-fn annotations(mut expiry: Option<i64>) -> std::collections::BTreeMap<String, String> {
-    let mut m = std::collections::BTreeMap::new();
-
-    if expiry.is_none() {
-        expiry = Some(generate_expiry());
-    }
-
-    m.insert(
-        "kufefe.io/expire-by".to_string(),
-        expiry.unwrap().to_string(),
-    );
-
-    m
 }
 
 /// Gets ownership labels

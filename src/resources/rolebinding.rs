@@ -1,4 +1,3 @@
-use crate::traits::{api::ApiResource, delete::DeleteOpt, expire::Expire};
 use crate::{crd::Request, meta::meta, resources::role::Role, CLIENT, NAMESPACE};
 use k8s_openapi::api::rbac::v1::{ClusterRoleBinding, RoleRef, Subject};
 use kube::api::PostParams;
@@ -23,11 +22,10 @@ impl RoleBinding {
         &self,
         name: String,
         role: String,
-        expire_at: i64,
         owner: &Request,
     ) -> Result<ClusterRoleBinding, Box<dyn Error>> {
         let namespace = NAMESPACE.get().unwrap().clone();
-        let meta = meta(Some(name.clone()), None, Some(expire_at), owner);
+        let meta = meta(Some(name.clone()), None, owner);
         let role_api = Role::new();
 
         // Check if the specified role has the annotation kufefe.io/role.
@@ -58,21 +56,5 @@ impl RoleBinding {
             }
             Err(e) => Err(Box::new(e)),
         }
-    }
-
-    /// Delete Role Binding
-    pub async fn _delete(&self, name: String) -> Result<(), kube::Error> {
-        self.api.delete_opt(&name, &Default::default()).await?;
-        Ok(())
-    }
-}
-
-impl Expire for RoleBinding {}
-
-impl ApiResource for RoleBinding {
-    type ApiType = ClusterRoleBinding;
-
-    fn get_api(&self) -> Api<Self::ApiType> {
-        self.api.clone()
     }
 }
