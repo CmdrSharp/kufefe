@@ -1,0 +1,1 @@
+Installed! Please refer to https://github.com/CmdrSharp/kufefe for instructions on use.
