@@ -17,8 +17,8 @@ Installation is done via Helm. Only a few values need to be set. Kufefe does not
 helm repo add kufefe https://cmdrsharp.github.io/kufefe
 
 helm install kufefe kufefe/kufefe \
-  --set kufefe.clusterUrl="https://my-cluster-api-url:443/"
-	--set kufefe.expireMinutes=60
+  --set kufefe.clusterUrl="https://my-cluster-api-url:443/" \
+  --set kufefe.expireMinutes=60
 ```
 
 Make sure to point the `clusterUrl` at the API address of the Kubernetes cluster. `expireMinutes` defaults to 60, but can be set to any number of minutes.
