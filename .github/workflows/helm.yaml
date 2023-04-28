@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'helm/**/*'
+      - 'charts/**/*'
   workflow_dispatch:
 
 jobs:
