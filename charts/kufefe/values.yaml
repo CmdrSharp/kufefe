@@ -5,7 +5,7 @@ kufefe:
 
 image:
   repository: quay.io/duk4s/kufefe
-  pullPolicy: Never
+  pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   # tag: ""
 
@@ -20,23 +20,22 @@ serviceAccount:
 podAnnotations: {}
 
 podSecurityContext: {}
-  # fsGroup: 2000
 
-securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
+securityContext:
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
 
 resources: {}
   # limits:
-  #   cpu: 100m
+  #   cpu: 50m
   #   memory: 64Mi
   # requests:
-  #   cpu: 100m
-  #   memory: 64Mi
+  #   cpu: 25m
+  #   memory: 32Mi
 
 nodeSelector: {}
 
