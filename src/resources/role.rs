@@ -19,21 +19,17 @@ impl Role {
     pub async fn get(&self, name: &str) -> Result<ClusterRole, String> {
         match self.api.get(name).await {
             Ok(o) => {
-                if o.metadata.annotations.is_none() {
-                    return Err(
-                        "Role does not have the annotation kufefe.io/role".to_string()
-                    );
-                }
+                let annotations = o.metadata.annotations.as_ref().ok_or_else(|| {
+                    "Role lacks the annotation kufefe.io/role".to_string()
+                })?;
 
-                let annotations = o.clone().metadata.annotations.unwrap();
-                if annotations.get("kufefe.io/role").is_none() {
-                    return Err(
-                        "Role does not have the annotation kufefe.io/role".to_string()
-                    );
+                if annotations.get("kufefe.io/role") != Some(&"true".to_string()) {
+                    return Err("Role lacks the annotation kufefe.io/role".to_string());
                 }
 
                 Ok(o)
             }
+
             Err(e) => Err(e.to_string()),
         }
     }
