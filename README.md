@@ -17,8 +17,7 @@ Installation is done via Helm. Only a few values need to be set. Kufefe does not
 helm repo add kufefe https://cmdrsharp.github.io/kufefe
 
 helm install kufefe kufefe/kufefe \
-  --set kufefe.clusterUrl="https://my-cluster-api-url:443/" \
-  --set kufefe.expireMinutes=60
+  --set kufefe.clusterUrl="https://my-cluster-api-url:443/"
 ```
 
 Make sure to point the `clusterUrl` at the API address of the Kubernetes cluster. `expireMinutes` defaults to 60, but can be set to any number of minutes.
@@ -36,8 +35,6 @@ spec:
   role: my-cluster-role # See note below on roles!
 ```
 
-For safety reasons, you can't bind to just any role, however. Kufefe will only create SA's for roles that have the annotation `kufefe.io/role: "true"`. This is to prevent binding to very privileged roles on accident.
-
 Shortly upon creating this `Request`, you should see that it is marked `Ready`.
 
 ```
@@ -50,3 +47,32 @@ You can now get the kubeconfig:
 ```
 ❯ kubectl get req i-need-a-kubeconfig -o=jsonpath='{.status.kubeconfig}'
 ```
+
+### Privilege Escalation & Role Aggregation
+
+Kufefe's own RBAC is set up using [aggregated cluster roles](https://kubernetes.io/docs/reference/access-authn-authz/rbac/#aggregated-clusterroles) with the label `rbac.authorization.k8s.io/aggregate-kufefe: "true"`.
+
+In order for Kufefe to be allowed to create Service Accounts that bind to other roles, there are two prerequisites:
+
+1. The role must be annotated with `kufefe.io/role: "true"`. If it is not, Kufefe will not create an SA bound to that role.
+2. Kufefe itself must be allowed to bind to the role it is trying to create an SA for. This a [Kubernetes mechanism](https://kubernetes.io/docs/reference/access-authn-authz/rbac/#privilege-escalation-prevention-and-bootstrapping) to prevent privilege escalation.
+
+For scenario two, let's say you have a `ClusterRole` called `debug`. In order for Kufefe to be allowed to create SA's bound to this role, you would create a `ClusterRole` like this:
+
+```yaml
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kufefe:rbac:bind:debug
+  labels:
+    rbac.authorization.k8s.io/aggregate-kufefe: "true"
+rules:
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources: ["clusterroles"]
+  verbs: ["bind"]
+  resourceNames: ["debug"] # Leave out to allow binding to ANY ClusterRole. Not recommended.
+```
+
+With this role created, Kufefe will now be allowed to create the ServiceAccount tied to the `debug` role.
+
