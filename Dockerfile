@@ -28,7 +28,7 @@ ENV RUST_LOG 'kufefe=info'
 WORKDIR /app
 
 # Create the non-root user
-RUN addgroup -S appadmin && adduser -S appadmin -G appadmin -D
+RUN addgroup -S appadmin -g 1000 && adduser -S appadmin -G appadmin -D -u 1000
 
 # Don't touch these
 ENV LC_COLLATE en_US.UTF-8
