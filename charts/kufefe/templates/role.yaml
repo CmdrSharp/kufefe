@@ -2,7 +2,7 @@
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: {{ include "kufefe.fullname" . }}-role
+  name: {{ include "kufefe.fullname" . }}:role
   namespace: {{ .Release.Namespace }}
 rules:
 - apiGroups: [""]

@@ -1,0 +1,11 @@
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ include "kufefe.rbac.roleName" . }}:requests
+  labels:
+    {{ include "kufefe.rbac.label" . }}
+rules:
+- apiGroups: ["kufefe.io"]
+  resources: ["requests", "requests/status"]
+  verbs: ["get", "list", "watch", "update"]

@@ -56,3 +56,11 @@ Create the name of the service account to use
 {{- define "kufefe.serviceAccountName" -}}
 {{ default (include "kufefe.fullname" .) .Values.serviceAccount.name }}
 {{- end -}}
+
+{{- define "kufefe.rbac.matchLabel" -}}
+rbac.authorization.k8s.io/aggregate-kufefe: "true"
+{{- end -}}
+
+{{- define "kufefe.rbac.roleName" -}}
+{{ .Release.Name }}:rbac
+{{- end -}}
