@@ -1,4 +1,5 @@
 use crate::CLIENT;
+use anyhow::{anyhow, bail, Result};
 use k8s_openapi::api::rbac::v1::ClusterRole;
 use kube::Api;
 
@@ -16,21 +17,22 @@ impl Role {
     }
 
     /// Find a role by name and verify it has the annotation kufefe.io/role
-    pub async fn get(&self, name: &str) -> Result<ClusterRole, String> {
+    pub async fn get(&self, name: &str) -> Result<ClusterRole> {
         match self.api.get(name).await {
             Ok(o) => {
-                let annotations = o.metadata.annotations.as_ref().ok_or_else(|| {
-                    "Role lacks the annotation kufefe.io/role".to_string()
-                })?;
+                let annotations =
+                    o.metadata.annotations.as_ref().ok_or_else(|| {
+                        anyhow!("Role lacks the annotation kufefe.io/role")
+                    })?;
 
                 if annotations.get("kufefe.io/role") != Some(&"true".to_string()) {
-                    return Err("Role lacks the annotation kufefe.io/role".to_string());
+                    bail!("Role lacks the annotation kufefe.io/role");
                 }
 
                 Ok(o)
             }
 
-            Err(e) => Err(e.to_string()),
+            Err(e) => bail!(e),
         }
     }
 }
