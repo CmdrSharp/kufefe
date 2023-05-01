@@ -47,4 +47,4 @@ RUN chown appadmin:appadmin /usr/local/bin/kufefe
 
 # Run as non-root
 USER appadmin
-CMD ["/usr/local/bin/kufefe",  "--daemon"]
+CMD ["/usr/local/bin/kufefe"]
