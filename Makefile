@@ -6,7 +6,7 @@ IMAGE = $(REGISTRY)/$(REPOSITORY)/$(NAME)
 
 .PHONY: build-image
 build-image:
-	DOCKER_BUILDKIT=1 docker image build \
+	DOCKER_BUILDKIT=1 docker image build --no-cache \
 		-t ${NAME}:${VERSION} \
 		.
 
