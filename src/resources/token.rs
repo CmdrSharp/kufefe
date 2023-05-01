@@ -1,6 +1,7 @@
-use crate::{crd::Request, meta::meta};
+use crate::traits::{api::ApiResource, meta::Meta};
 use crate::{CLIENT, NAMESPACE};
-use k8s_openapi::api::core::v1::Secret;
+use anyhow::{bail, Result};
+use k8s_openapi::api::core::v1::{Secret, ServiceAccount};
 use k8s_openapi::ByteString;
 use kube::api::PostParams;
 use kube::Api;
@@ -21,12 +22,11 @@ impl Token {
     }
 
     /// Create a new Service Account Token Secret
-    pub async fn create(
-        &self,
-        name: String,
-        owner: &Request,
-    ) -> Result<Secret, kube::Error> {
-        let mut metadata = meta(Some(name.clone()), Some(self.namespace.clone()), owner);
+    pub async fn create(&self, name: String, owner: &ServiceAccount) -> Result<Secret> {
+        // Convert the k8sapi ServiceAccount to a kube ServiceACcount
+        let mut metadata = self
+            .generate_meta(Some(name.clone()), Some(self.namespace.clone()), owner)
+            .await;
 
         let mut annotations = match metadata.annotations {
             Some(annotations) => annotations,
@@ -35,7 +35,11 @@ impl Token {
 
         annotations.insert(
             "kubernetes.io/service-account.name".to_string(),
-            name.clone(),
+            owner
+                .metadata
+                .name
+                .clone()
+                .expect("Service Account has no name"),
         );
 
         metadata.annotations = Some(annotations);
@@ -52,27 +56,34 @@ impl Token {
                 tracing::info!("Created Secret (SA Token) {}", name);
                 Ok(o)
             }
-            Err(e) => Err(e),
+            Err(e) => bail!(e),
         }
     }
 
-    /// Get a secret
-    pub async fn get(&self, name: String) -> Result<Secret, kube::Error> {
-        self.api.get(&name).await
-    }
-
     /// Get data from a secret idiomatically
-    pub fn data(secret: Secret, key: &str) -> Result<ByteString, String> {
+    pub async fn data(&self, secret_name: String, key: &str) -> Result<ByteString> {
+        let secret = self.get_api().get(&secret_name).await?;
+
         let data = if let Some(data) = secret.data {
             data
         } else {
-            return Err("Secret has no data".to_string());
+            bail!("Secret has no data");
         };
 
         if let Some(v) = data.get(key) {
             Ok(v.clone())
         } else {
-            return Err(format!("Secret has no property {}", key));
+            bail!("Secret has no property {}", key);
         }
     }
 }
+
+impl ApiResource for Token {
+    type ApiType = Secret;
+
+    fn get_api(&self) -> Api<Self::ApiType> {
+        self.api.clone()
+    }
+}
+
+impl Meta for Token {}
