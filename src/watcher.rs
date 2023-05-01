@@ -1,17 +1,19 @@
-use crate::meta::generate_expiry;
+use crate::crd::RequestStatus;
 use crate::resources::{rolebinding, serviceaccount, token};
-use crate::{
-    crd::Request, crd::RequestStatus, kubeconfig::Kubeconfig, meta::generate_name, CLIENT,
-};
+use crate::traits::{expire::Expire, meta::Meta};
+use crate::{crd::Request, kubeconfig::Kubeconfig, CLIENT, NAMESPACE};
+use anyhow::Result;
 use futures::TryStreamExt;
 use kube::api::ListParams;
 use kube::runtime::watcher::Event::*;
 use kube::{api::Api, runtime::watcher, ResourceExt};
-use std::error::Error;
 
 /// Starts the controller which watches for CRD Creation/Modification
 pub async fn watch() {
-    tracing::info!("Starting watcher for resource creation/deletion");
+    tracing::info!(
+        "Starting watcher for resource creation/deletion in Kubernetes namespace {}",
+        NAMESPACE.get().unwrap().clone()
+    );
 
     let client = CLIENT.get().unwrap().clone();
     let api: Api<Request> = Api::all(client);
@@ -51,11 +53,20 @@ async fn _watch(api: Api<Request>) {
 
             async move {
                 match r {
-                    Applied(a) => {
+                    Applied(mut a) => {
                         if a.status.is_none() {
                             tracing::info!("Processing Addition: {}", a.name_any());
 
-                            if let Err(e) = added(a).await {
+                            if let Err(e) = added(a.clone()).await {
+                                let status = RequestStatus::new(&a).await;
+                                a.status = Some(status);
+
+                                a.message(e.to_string())
+                                    .failed(true)
+                                    .update_status()
+                                    .await
+                                    .ok();
+
                                 tracing::error!("{}", e);
                             }
                         }
@@ -77,42 +88,48 @@ async fn _watch(api: Api<Request>) {
 }
 
 /// Handle new resource creation
-async fn added(resource: Request) -> Result<(), Box<dyn Error>> {
+async fn added(mut resource: Request) -> Result<()> {
     let sa = serviceaccount::ServiceAccount::new();
     let rb = rolebinding::RoleBinding::new();
+    let tk = token::Token::new();
 
     // Generate the object name, expiry time and update CRD status
-    let name = generate_name();
-    let expire_at = generate_expiry();
-    RequestStatus {
-        generated_name: name.clone(),
-        kubeconfig: None,
-        ready: false,
-        expires_at: Some(expire_at),
-    }
-    .update(&resource, &name)
-    .await?;
+    let expire_at = resource.generate_expiry();
+    let sa_name = sa.generate_name().await;
+    let rb_name = rb.generate_name().await;
+    let tk_name = tk.generate_name().await;
+
+    // Set status
+    resource
+        .account_names(sa_name.clone(), tk_name.clone(), rb_name.clone())
+        .expires_at(expire_at)
+        .ready(false)
+        .failed(false)
+        .message("Generated names for resources".to_string())
+        .update_status()
+        .await?;
 
     // Create the Service Account
-    sa.create(name.clone(), &resource).await?;
+    let service_account = sa.create(sa_name.clone(), &resource).await?;
 
     // Create the SA Token
-    token::Token::new().create(name.clone(), &resource).await?;
+    let token = token::Token::new()
+        .create(tk_name.clone(), &service_account)
+        .await?;
 
     // Create the RoleBinding
-    rb.create(name.clone(), resource.spec.role.clone(), &resource)
+    rb.create(rb_name.clone(), resource.spec.role.clone(), &resource)
         .await?;
 
     // Create the Kubeconfig and update the CRD Status
-    let kubeconfig = Kubeconfig::new(name.clone()).await?.to_yaml()?;
-    RequestStatus {
-        generated_name: name.clone(),
-        kubeconfig: Some(kubeconfig),
-        ready: true,
-        expires_at: Some(expire_at),
-    }
-    .update(&resource, &name)
-    .await?;
+    let kubeconfig = Kubeconfig::new(service_account, token).await?.to_yaml()?;
+
+    resource
+        .ready(true)
+        .kubeconfig(&kubeconfig)
+        .message("Completed".to_string())
+        .update_status()
+        .await?;
 
     Ok(())
 }
