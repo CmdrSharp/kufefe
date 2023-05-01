@@ -1,8 +1,9 @@
-use crate::{crd::Request, meta::meta, resources::role::Role, CLIENT, NAMESPACE};
+use crate::traits::api::ApiResource;
+use crate::{crd::Request, resources::role::Role, traits::meta::Meta, CLIENT, NAMESPACE};
+use anyhow::{bail, Result};
 use k8s_openapi::api::rbac::v1::{ClusterRoleBinding, RoleRef, Subject};
 use kube::api::PostParams;
 use kube::Api;
-use std::error::Error;
 
 pub struct RoleBinding {
     api: Api<ClusterRoleBinding>,
@@ -23,9 +24,9 @@ impl RoleBinding {
         name: String,
         role: String,
         owner: &Request,
-    ) -> Result<ClusterRoleBinding, Box<dyn Error>> {
+    ) -> Result<ClusterRoleBinding> {
         let namespace = NAMESPACE.get().unwrap().clone();
-        let meta = meta(Some(name.clone()), None, owner);
+        let meta = self.generate_meta(Some(name.clone()), None, owner).await;
         let role_api = Role::new();
 
         // Check if the specified role has the annotation kufefe.io/role.
@@ -54,7 +55,17 @@ impl RoleBinding {
                 tracing::info!("Created RoleBinding {}", &name);
                 Ok(o)
             }
-            Err(e) => Err(Box::new(e)),
+            Err(e) => bail!(e),
         }
     }
 }
+
+impl ApiResource for RoleBinding {
+    type ApiType = ClusterRoleBinding;
+
+    fn get_api(&self) -> Api<Self::ApiType> {
+        self.api.clone()
+    }
+}
+
+impl Meta for RoleBinding {}
