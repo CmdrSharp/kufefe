@@ -6,10 +6,10 @@ use tokio::signal::unix::{signal, SignalKind};
 use tokio::sync::OnceCell;
 
 mod crd;
-mod delete;
 mod kubeconfig;
-mod meta;
+mod macros;
 mod resources;
+mod traits;
 mod watcher;
 
 static CLIENT: OnceCell<Client> = OnceCell::const_new();
