@@ -20,10 +20,24 @@ spec:
                   description: "The role to be assigned to the user"
             status:
               type: object
+              required:
+                - ready
               properties:
-                generatedName:
+                serviceAccountName:
                   type: string
-                  description: "The generated name for the user"
+                  description: "The generated name for the ServiceAccount"
+                  x-kubernetes-validations:
+                    - message: Value is immutable
+                      rule: self == oldSelf
+                tokenName:
+                  type: string
+                  description: "The generated name for the ServiceAccount Token"
+                  x-kubernetes-validations:
+                    - message: Value is immutable
+                      rule: self == oldSelf
+                rolebindingName:
+                  type: string
+                  description: "The generated name for the ClusterRoleBindnig"
                   x-kubernetes-validations:
                     - message: Value is immutable
                       rule: self == oldSelf
@@ -34,6 +48,13 @@ spec:
                   type: boolean
                   description: "True if the request has been fulfilled"
                   default: false
+                failed:
+                  type: boolean
+                  description: "True if the request has failed"
+                  default: false
+                message:
+                  type: string
+                  description: "Latest known status for the request"
                 expiresAt:
                   type: integer
                   description: "Timestamp when the request expires"
@@ -45,6 +66,9 @@ spec:
       additionalPrinterColumns:
         - jsonPath: .status.ready
           name: READY
+          type: boolean
+        - jsonPath: .status.failed
+          name: FAILED
           type: boolean
         - jsonPath: .metadata.creationTimestamp
           name: AGE
