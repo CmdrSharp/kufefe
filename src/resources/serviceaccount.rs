@@ -1,4 +1,5 @@
-use crate::{crd::Request, meta::meta, CLIENT, NAMESPACE};
+use crate::traits::api::ApiResource;
+use crate::{crd::Request, traits::meta::Meta, CLIENT, NAMESPACE};
 use k8s_openapi::api::core::v1::ServiceAccount as KubeServiceAccount;
 use kube::api::PostParams;
 use kube::Api;
@@ -28,7 +29,9 @@ impl ServiceAccount {
         name: String,
         owner: &Request,
     ) -> Result<KubeServiceAccount, kube::Error> {
-        let meta = meta(Some(name.clone()), Some(self.namespace.clone()), owner);
+        let meta = self
+            .generate_meta(Some(name.clone()), Some(self.namespace.clone()), owner)
+            .await;
 
         // Construct the API Object
         let sa = KubeServiceAccount {
@@ -47,3 +50,13 @@ impl ServiceAccount {
         }
     }
 }
+
+impl ApiResource for ServiceAccount {
+    type ApiType = KubeServiceAccount;
+
+    fn get_api(&self) -> Api<Self::ApiType> {
+        self.api.clone()
+    }
+}
+
+impl Meta for ServiceAccount {}
