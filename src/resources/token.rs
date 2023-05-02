@@ -1,5 +1,5 @@
 use crate::traits::{api::ApiResource, meta::Meta};
-use crate::{CLIENT, NAMESPACE};
+use crate::CONFIG;
 use anyhow::{bail, Result};
 use k8s_openapi::api::core::v1::{Secret, ServiceAccount};
 use k8s_openapi::ByteString;
@@ -14,8 +14,8 @@ pub struct Token {
 impl Token {
     /// Instantiate Token Struct
     pub fn new() -> Self {
-        let client = CLIENT.get().unwrap().clone();
-        let namespace = NAMESPACE.get().unwrap().clone();
+        let client = CONFIG.get().unwrap().client();
+        let namespace = CONFIG.get().unwrap().namespace();
         let api: Api<Secret> = Api::namespaced(client, &namespace);
 
         Self { namespace, api }

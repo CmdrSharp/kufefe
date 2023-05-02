@@ -1,10 +1,9 @@
-use crate::crd::Request;
-use kube::{Client, Config};
-use std::env;
+use crate::{config::KufefeConfig, crd::Request};
 use tokio::select;
 use tokio::signal::unix::{signal, SignalKind};
 use tokio::sync::OnceCell;
 
+mod config;
 mod crd;
 mod kubeconfig;
 mod macros;
@@ -12,9 +11,7 @@ mod resources;
 mod traits;
 mod watcher;
 
-static CLIENT: OnceCell<Client> = OnceCell::const_new();
-static NAMESPACE: OnceCell<String> = OnceCell::const_new();
-static CLUSTER_URL: OnceCell<String> = OnceCell::const_new();
+static CONFIG: OnceCell<KufefeConfig> = OnceCell::const_new();
 
 #[tokio::main]
 async fn main() {
@@ -29,20 +26,13 @@ async fn main() {
         .init();
 
     // Set up statics
-    let config = Config::infer().await.expect("Failed to infer config");
-
-    CLUSTER_URL
-        .set(env::var("CLUSTER_URL").unwrap_or(config.cluster_url.to_string()))
-        .expect("Failed to set CLUSTER_URL");
-
-    NAMESPACE
-        .set(env::var("NAMESPACE").unwrap_or_else(|_| "default".to_string()))
-        .expect("Failed to set NAMESPACE");
-
-    if CLIENT.set(Client::try_default().await.unwrap()).is_err() {
-        tracing::error!("Failed to set CLIENT");
-        std::process::exit(2);
-    }
+    CONFIG
+        .set(
+            KufefeConfig::new()
+                .await
+                .expect("Failed to generate Kufefe Configuration"),
+        )
+        .ok();
 
     // Thread for handling signals
     tokio::spawn(async move {

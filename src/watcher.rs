@@ -1,7 +1,7 @@
 use crate::crd::RequestStatus;
 use crate::resources::{rolebinding, serviceaccount, token};
 use crate::traits::{expire::Expire, meta::Meta};
-use crate::{crd::Request, kubeconfig::Kubeconfig, CLIENT, NAMESPACE};
+use crate::{crd::Request, kubeconfig::Kubeconfig, CONFIG};
 use anyhow::Result;
 use futures::TryStreamExt;
 use kube::api::ListParams;
@@ -12,10 +12,10 @@ use kube::{api::Api, runtime::watcher, ResourceExt};
 pub async fn watch() {
     tracing::info!(
         "Starting watcher for resource creation/deletion in Kubernetes namespace {}",
-        NAMESPACE.get().unwrap().clone()
+        CONFIG.get().unwrap().namespace()
     );
 
-    let client = CLIENT.get().unwrap().clone();
+    let client = CONFIG.get().unwrap().client();
     let api: Api<Request> = Api::all(client);
 
     // Do an inital scan for previously created & unready CRD's

@@ -1,5 +1,5 @@
 use crate::traits::api::ApiResource;
-use crate::{crd::Request, traits::meta::Meta, CLIENT, NAMESPACE};
+use crate::{crd::Request, traits::meta::Meta, CONFIG};
 use k8s_openapi::api::core::v1::ServiceAccount as KubeServiceAccount;
 use kube::api::PostParams;
 use kube::Api;
@@ -12,15 +12,12 @@ pub struct ServiceAccount {
 impl ServiceAccount {
     /// Instantiate a ServiceAccount struct
     pub fn new() -> Self {
-        let client = CLIENT.get().unwrap().clone();
+        let client = CONFIG.get().unwrap().client();
+        let namespace = CONFIG.get().unwrap().namespace();
 
-        let namespace = NAMESPACE.get().unwrap();
-        let api: Api<KubeServiceAccount> = Api::namespaced(client, namespace);
+        let api: Api<KubeServiceAccount> = Api::namespaced(client, &namespace);
 
-        Self {
-            namespace: namespace.clone(),
-            api,
-        }
+        Self { namespace, api }
     }
 
     /// Create the Service Account in Kubernetes

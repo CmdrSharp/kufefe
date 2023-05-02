@@ -1,4 +1,4 @@
-use crate::CLIENT;
+use crate::CONFIG;
 use anyhow::{anyhow, bail, Result};
 use k8s_openapi::api::rbac::v1::ClusterRole;
 use kube::Api;
@@ -10,7 +10,7 @@ pub struct Role {
 impl Role {
     /// Instantiate a Role struct
     pub fn new() -> Self {
-        let client = CLIENT.get().unwrap().clone();
+        let client = CONFIG.get().unwrap().client();
         let api: Api<ClusterRole> = Api::all(client);
 
         Self { api }

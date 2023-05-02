@@ -1,4 +1,4 @@
-use crate::{resources::token::Token, CLUSTER_URL};
+use crate::{resources::token::Token, CONFIG};
 use anyhow::{bail, Result};
 use base64::{engine::general_purpose, Engine as _};
 use k8s_openapi::api::core::v1::{Secret, ServiceAccount};
@@ -116,7 +116,7 @@ impl Kubeconfig {
             clusters: vec![Cluster {
                 cluster: ClusterDetails {
                     certificate_authority_data: general_purpose::STANDARD.encode(ca),
-                    server: CLUSTER_URL.get().unwrap().clone(),
+                    server: CONFIG.get().unwrap().url(),
                 },
                 name: "kubernetes".to_string(),
             }],

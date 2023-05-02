@@ -1,5 +1,5 @@
 use crate::traits::api::ApiResource;
-use crate::{resources::role::Role, traits::meta::Meta, Request, CLIENT, NAMESPACE};
+use crate::{resources::role::Role, traits::meta::Meta, Request, CONFIG};
 use anyhow::{bail, Result};
 use k8s_openapi::api::core::v1::ServiceAccount;
 use k8s_openapi::api::rbac::v1::{ClusterRoleBinding, RoleRef, Subject};
@@ -13,7 +13,7 @@ pub struct RoleBinding {
 impl RoleBinding {
     /// Instantiate a RoleBinding struct
     pub fn new() -> Self {
-        let client = CLIENT.get().unwrap().clone();
+        let client = CONFIG.get().unwrap().client();
         let api: Api<ClusterRoleBinding> = Api::all(client);
 
         Self { api }
@@ -27,7 +27,7 @@ impl RoleBinding {
         sa: &ServiceAccount,
         owner: &Request,
     ) -> Result<ClusterRoleBinding> {
-        let namespace = NAMESPACE.get().unwrap().clone();
+        let namespace = CONFIG.get().unwrap().namespace();
         let meta = self.generate_meta(Some(name.clone()), None, owner).await;
         let role_api = Role::new();
 

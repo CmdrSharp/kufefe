@@ -1,5 +1,5 @@
 use crate::traits::{api::ApiResource, delete::DeleteOpt, expire::Expire};
-use crate::{status_update, CLIENT};
+use crate::{status_update, CONFIG};
 use anyhow::{bail, Result};
 use kube::api::{DeleteParams, ListParams};
 use kube::{
@@ -61,8 +61,6 @@ impl RequestStatus {
 
     /// Update status of the CRD
     pub async fn update(&self, resource: &Request) -> Result<()> {
-        // let client = CLIENT.get().unwrap().clone();
-        // let api: Api<Request> = Api::all(client);
         let api = resource.get_api();
 
         let mut status = api.get_status(&resource.name_any()).await?;
@@ -200,7 +198,7 @@ impl ApiResource for Request {
     type ApiType = Request;
 
     fn get_api(&self) -> Api<Self::ApiType> {
-        let client = CLIENT.get().unwrap().clone();
+        let client = CONFIG.get().unwrap().client();
         let api: Api<Request> = Api::all(client);
 
         api
