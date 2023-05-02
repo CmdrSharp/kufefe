@@ -47,26 +47,36 @@ impl KufefeConfig {
 
         match api.list(&ListParams::default()).await {
             Ok(list) => {
+                // If there's multiple questions, defer to the cluster name.
                 if list.items.len() > 1 {
                     let cluster_name = env::var("CLUSTER_NAME");
-
                     if cluster_name.is_err() {
                         bail!("Found more than one cluster. Please specify the CLUSTER_NAME environment variable");
                     }
 
+                    // Attempt to find the cluster in the list
                     if let Some(cluster) = list.items.iter().find(|c| {
                         let cluster_name = cluster_name.clone().unwrap();
                         c.metadata.name.clone().unwrap() == cluster_name
                     }) {
                         if let Some(status) = &cluster.status {
-                            return Ok(status.api_endpoints[0].host.clone());
+                            return Ok(format!(
+                                "https://{}:{}",
+                                status.api_endpoints[0].host.clone(),
+                                status.api_endpoints[0].port.clone()
+                            ));
                         }
                     }
                 }
 
+                // Grab the first cluster if there's only one
                 if let Some(cluster) = list.items.first() {
                     if let Some(status) = &cluster.status {
-                        return Ok(status.api_endpoints[0].host.clone());
+                        return Ok(format!(
+                            "https://{}:{}",
+                            status.api_endpoints[0].host.clone(),
+                            status.api_endpoints[0].port.clone()
+                        ));
                     }
                 }
 
