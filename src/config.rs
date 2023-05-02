@@ -17,15 +17,22 @@ impl KufefeConfig {
             .expect("Failed to create Kubernetes Client");
 
         let mut url: String = Self::from_env();
+        let namespace = env::var("NAMESPACE").unwrap_or_else(|_| "default".to_string());
 
         // Handle fallback methods if URL isn't explicitly set
         if url.is_empty() {
+            tracing::info!(
+                "Cluster URL not explicitly set. Attempting to find it automatically.."
+            );
+
             url = Self::anthos(client.clone()).await?
         }
 
+        tracing::info!("Detected URL: {} and namespace: {}", url, namespace);
+
         Ok(Self {
             url,
-            namespace: env::var("NAMESPACE").unwrap_or_else(|_| "default".to_string()),
+            namespace,
             client: Client::try_default()
                 .await
                 .expect("Failed to generate Kubernetes Client"),
@@ -34,6 +41,8 @@ impl KufefeConfig {
 
     /// Attempts to fetch the cluster url from GKE / Anthos
     async fn anthos(client: Client) -> Result<String> {
+        tracing::info!("Attempting to find GKE/Anthos kind: Cluster");
+
         let api: Api<Cluster> = Api::namespaced(client, "default");
 
         match api.list(&ListParams::default()).await {
