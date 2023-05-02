@@ -8,4 +8,4 @@ metadata:
 rules:
 - apiGroups: ["kufefe.io"]
   resources: ["requests", "requests/status"]
-  verbs: ["get", "list", "watch", "update"]
+  verbs: ["get", "list", "watch", "update", "delete"]
