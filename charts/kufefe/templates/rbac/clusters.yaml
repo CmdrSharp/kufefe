@@ -1,0 +1,13 @@
+{{- if not .Values.kufefe.clusterUrl }}
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ include "kufefe.rbac.roleName" . }}:clusters
+  labels:
+    {{ include "kufefe.rbac.label" . }}
+rules:
+- apiGroups: ["luster.k8s.io"]
+  resources: ["clusters"]
+  verbs: ["get", "list"]
+{{- end }}
