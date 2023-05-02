@@ -118,8 +118,13 @@ async fn added(mut resource: Request) -> Result<()> {
         .await?;
 
     // Create the RoleBinding
-    rb.create(rb_name.clone(), resource.spec.role.clone(), &resource)
-        .await?;
+    rb.create(
+        rb_name.clone(),
+        resource.spec.role.clone(),
+        &service_account,
+        &resource,
+    )
+    .await?;
 
     // Create the Kubeconfig and update the CRD Status
     let kubeconfig = Kubeconfig::new(service_account, token).await?.to_yaml()?;

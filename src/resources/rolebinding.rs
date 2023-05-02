@@ -1,6 +1,7 @@
 use crate::traits::api::ApiResource;
-use crate::{crd::Request, resources::role::Role, traits::meta::Meta, CLIENT, NAMESPACE};
+use crate::{resources::role::Role, traits::meta::Meta, Request, CLIENT, NAMESPACE};
 use anyhow::{bail, Result};
+use k8s_openapi::api::core::v1::ServiceAccount;
 use k8s_openapi::api::rbac::v1::{ClusterRoleBinding, RoleRef, Subject};
 use kube::api::PostParams;
 use kube::Api;
@@ -23,11 +24,19 @@ impl RoleBinding {
         &self,
         name: String,
         role: String,
+        sa: &ServiceAccount,
         owner: &Request,
     ) -> Result<ClusterRoleBinding> {
         let namespace = NAMESPACE.get().unwrap().clone();
         let meta = self.generate_meta(Some(name.clone()), None, owner).await;
         let role_api = Role::new();
+
+        // Get the owner name
+        let sa_name = if let Some(name) = sa.metadata.name.clone() {
+            name
+        } else {
+            bail!("ServiceAccount has no name");
+        };
 
         // Check if the specified role has the annotation kufefe.io/role.
         role_api.get(&role).await?;
@@ -35,7 +44,7 @@ impl RoleBinding {
         // Construct a subject
         let subject = Subject {
             kind: "ServiceAccount".to_string(),
-            name: name.clone(),
+            name: sa_name,
             namespace: Some(namespace),
             ..Subject::default()
         };
