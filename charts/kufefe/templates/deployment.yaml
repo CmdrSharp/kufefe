@@ -42,6 +42,10 @@ spec:
             value: "{{ .Values.kufefe.expireMinutes }}"
           - name: CLUSTER_URL
             value: "{{ .Values.kufefe.clusterUrl }}"
+          {{- if .Values.kufefe.clusterName }}
+          - name: CLUSTER_NAME
+            value: "{{ .Values.kufefe.clusterName }}"
+          {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

@@ -1,7 +1,8 @@
 ---
 kufefe:
   expireMinutes: 60
-  clusterUrl: "https://kubernetes.default.svc"
+  clusterUrl: "" # If left empty, Kufefe will try to auto-detect. If auto-detection fails, you must specify this.
+  # clusterName: "" # Set this if you have multiple clusters and want to distinguish them during auto-detection.
 
 image:
   repository: quay.io/duk4s/kufefe
