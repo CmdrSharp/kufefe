@@ -2,6 +2,16 @@ apiVersion: v1
 entries:
   kufefe:
   - apiVersion: v2
+    appVersion: 1.0.1
+    created: "2023-06-08T08:58:13.707406857Z"
+    description: Kufefe lets you create ephemeral Service Accounts in Kubernetes
+    digest: e6d5c5b8fe761adfcc26e3e002d3866442a4171189e7b1f0a98e06c3d179470f
+    name: kufefe
+    type: application
+    urls:
+    - https://github.com/CmdrSharp/kufefe/releases/download/kufefe-1.0.1/kufefe-1.0.1.tgz
+    version: 1.0.1
+  - apiVersion: v2
     appVersion: 1.0.0
     created: "2023-05-02T16:25:35.079730595Z"
     description: Kufefe lets you create ephemeral Service Accounts in Kubernetes
@@ -11,4 +21,4 @@ entries:
     urls:
     - https://github.com/CmdrSharp/kufefe/releases/download/kufefe-1.0.0/kufefe-1.0.0.tgz
     version: 1.0.0
-generated: "2023-05-02T16:25:35.079743495Z"
+generated: "2023-06-08T08:58:13.707415257Z"
