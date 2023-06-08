@@ -36,10 +36,9 @@ pub async fn watch() {
     }
 
     // Start the watcher
-    tokio::spawn({
-        let api: Api<Request> = api.clone();
-
-        async move {
+    tokio::spawn(async move {
+        loop {
+            let api: Api<Request> = api.clone();
             _watch(api).await;
         }
     });
@@ -47,6 +46,8 @@ pub async fn watch() {
 
 /// Start the watcher for CRD Creation/Deletion
 async fn _watch(api: Api<Request>) {
+    tracing::info!("Watching for CRD Creation/Deletion");
+
     if let Err(e) = watcher(api.clone(), watcher::Config::default())
         .try_for_each(|r| {
             tracing::debug!("Event: {:?}", r);
